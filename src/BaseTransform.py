@@ -1,4 +1,4 @@
-import scipy
+import scipy as sp
 import numpy as np
 np.seterr(divice='ignore', invalid='ignore')
 
@@ -9,8 +9,8 @@ class BaseTransform:
 
 	def __init__(self, 
 		samples=512, 
-		rstride=32, 
-		astride=32,
+		xstride=32, 
+		ystride=32,
 		colors=[
 			(0, 0, 0), (1, 1, 1)
 		]
@@ -21,8 +21,8 @@ class BaseTransform:
 			w_pad=0, h_pad=0, hspace=0, wspace=0
 		)
 
-		self._rstride = rstride
-		self._astride = astride
+		self._xstride = xstride
+		self._ystride = ystride
 		self._colors  = colors
 
 		self.set_samples(samples)
@@ -41,11 +41,9 @@ class BaseTransform:
 			return self._polys
 
 		def update(time):
-			rtime, atime = time * np.array(speed) / 90
-		
-			return self._eval_polys_path(
-				self.apply(self.shift_data(rtime, atime))
-			) 
+			return self._eval_polys_path(*self._apply(
+				self._shift_data(speed * time / 90)
+			)) 
 			
 		FuncAnimation(self.figure, update,
 			init_func=init,
@@ -66,22 +64,21 @@ class BaseTransform:
 		self._path_slices = self._generate_polys_path()
 		self._polys = self._initialize_polys()
 
-	def set_rstride(self, rstride):
+	def set_xstride(self, xstride):
 		self.axis.clear()
 
-		self._rstride = rstride
+		self._xstride = xstride
 
 		self._path_slices = self._generate_polys_path()
 		self._polys = self._initialize_polys()
 
-	def set_astride(self, astride):
+	def set_ystride(self, ystride):
 		self.axis.clear()
 		
-		self._astride = astride
+		self._ystride = ystride
 
 		self._path_slices = self._generate_polys_path()
 		self._polys = self._initialize_polys()
-
 
 	def set_resolution(self, width, height, dpi=72)
 		self._aspect_rate = width / height
@@ -93,14 +90,14 @@ class BaseTransform:
 	def _generate_polys_path(self):
 		return [
 			[
-				np.s_[   i:i+self._rstride,      j+self._astride],
-				np.s_[     i+self._rstride, j+self._astride:j:-1],
-				np.s_[i+self._rstride:i:-1,                    j],
-				np.s_[                   i,  j:j+self._astride+1]
+				np.s_[   i:i+self._xstride,      j+self._ystride],
+				np.s_[     i+self._xstride, j+self._ystride:j:-1],
+				np.s_[i+self._xstride:i:-1,                    j],
+				np.s_[                   i,  j:j+self._ystride+1]
 			]
 
-			for i in range(0, self._samples, self._rstride)
-			for j in range(0, self._samples, self._astride)
+			for i in range(0, self._samples, self._xstride)
+			for j in range(0, self._samples, self._ystride)
 		]
 
 	def _initialize_polys(self):
@@ -113,10 +110,10 @@ class BaseTransform:
 		)
 
 		color_index = [
-			(i//self._rstride + j//self._astride) % len(self._colors)
+			(i//self._xstride + j//self._ystride) % len(self._colors)
 
-			for i in range(0, self._samples, self._rstride)
-			for j in range(0, self._samples, self._astride)
+			for i in range(0, self._samples, self._xstride)
+			for j in range(0, self._samples, self._ystride)
 		]
 
 		for poly, idx in zip(polys, color_index):
@@ -124,30 +121,37 @@ class BaseTransform:
 
 		return polys
 
-	def _eval_polys_path(self, data):
+	def _eval_polys_path(self, x, y):
 		
-		X, Y = np.real(self._data), np.imag(self._data)
-
 		for poly, sl in zip(self._polys, self._path_slices):
 			poly.set_xy(np.column_stack([
-				np.concatenate([X[s] for s in sl]),
-				np.concatenate([Y[s] for s in sl])
+				np.concatenate([x[s] for s in sl]),
+				np.concatenate([y[s] for s in sl])
 			]))
 
 		return self._polys
 
-	def generate_data(self):
+	def _shift_data(self, t):
+		shift = self._get_shift(t)
+
+		return sp.ndimage.shift(self._data, shift, 
+			prefilter=False, 
+			order=3, 
+			mode='wrap'
+		)
+
+	def _generate_data(self):
 		raise NotImplementedError('This is a abstract method.')
 
-	def shift_data(self, rtime, atime):
+	def _get_shift(self, t):
 		raise NotImplementedError('This is a abstract method.')
 
-	def apply(self, data):
+	def _apply(self, x, y):
 		raise NotImplementedError('This is a abstract method.')
 
 	def get_axis_xlim(self):
 		raise NotImplementedError('This is a abstract method.')
 
 	def get_axis_ylim(self):
-		NotImplementedError('This is a abstract method.')
+		raise NotImplementedError('This is a abstract method.')
 
