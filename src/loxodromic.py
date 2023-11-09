@@ -1,25 +1,30 @@
 import scipy as sp
 import numpy as np
-np.seterr(divide='ignore', invalid='ignore')
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 from . import BaseTransform
 
-class LoxodromicTransform(BaseTransform):
+class Loxodromic(BaseTransform):
 	
 	def __init__(self, p, q, **kwargs):
-		self._p = p
-		self._q = q
-
+		self.set_fixed_points(p, q)
 		super().__init__(**kwargs)
 	
 	
+	def set_fixed_points(self, p, q):
+		self._p = p
+		self._q = q
+		self._center = .5 * (p + q)
+
+		self._xlim = None
+		self._ylim = None
+
 	def _get_shift(self, t):
 		return self._samples * np.array([
-			        t,
-			np.pi * t
+			np.pi * t,
+			        t
 		])
 
 	def _generate_data(self):
@@ -30,22 +35,22 @@ class LoxodromicTransform(BaseTransform):
 		r = np.concatenate([ r, [ r[-1] ] ])
 		theta = np.concatenate([ theta, [ theta[-1] ] ])
 
-		THETA, R = np.meshgrid(theta, r)
+		R, THETA = np.meshgrid(r, theta)
 		
 		return R * np.exp(1j * THETA)
 
 	def _apply(self, data):
 		z = data
-		p, q = self._p, self._q
+		p, q, c = self._p, self._q, self._center
 
-		w = (z * q - p) / (1 + z)
+		w = (p - z * q) / (1 - z)
 		x, y = np.real(w), np.imag(w)
 
 		a, b = self.get_axis_xlim()
-		x[np.abs(x) > (b - a)] = np.NaN
+		x[np.abs(x - c) > (b - a)] = np.NaN
 
 		a, b = self.get_axis_ylim()
-		y[np.abs(y) > (b - a)] = np.NaN
+		y[np.abs(y - c) > (b - a)] = np.NaN
 
 		return (x, y)
 
@@ -56,22 +61,29 @@ class LoxodromicTransform(BaseTransform):
 		return np.max([np.abs(x2 - x1), np.abs(y2 - y1)])
 
 	def get_axis_xlim(self):
-		x1, x2 = np.real(self._p), np.real(self._q)
-		
+		if (self._xlim != None):
+			return self._xlim
+
+		xcenter = np.real(self._center)
 		dist = self._distance()
 
-		a = self._aspect_rate * np.min([x1, x2]) - dist / 2
-		b = self._aspect_rate * np.max([x1, x2]) + dist / 2
+		self._xlim = (
+			self._aspect_rate * (xcenter - dist),	
+			self._aspect_rate * (xcenter + dist)
+		)
 
-		return (a, b)
+		return self._xlim
 
 	def get_axis_ylim(self):
-		y1, y2 = np.imag(self._p), np.imag(self._q)
-		
+		if (self._ylim != None):
+			return self._ylim
+
+		ycenter = np.imag(self._center)
 		dist = self._distance()
 
-		a = np.min([y1, y2]) - dist / 2
-		b = np.max([y1, y2]) + dist / 2
+		self._ylim = (
+			ycenter - dist,
+			ycenter + dist
+		)
 
-		return (a, b)
-
+		return self._ylim

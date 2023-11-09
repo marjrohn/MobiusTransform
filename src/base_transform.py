@@ -1,18 +1,17 @@
 import scipy as sp
 import numpy as np
-np.seterr(divice='ignore', invalid='ignore')
 
-import matplotlib.pyploy as plt
+import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 class BaseTransform:
 
 	def __init__(self, 
 		samples=512, 
-		xstride=32, 
-		ystride=32,
+		xstride=16, 
+		ystride=8,
 		colors=[
-			(0, 0, 0), (1, 1, 1)
+			'black', 'white'
 		]
 	):
 		self.figure, self.axis = plt.subplots(layout='constrained')
@@ -28,8 +27,20 @@ class BaseTransform:
 		self.set_samples(samples)
 
 
-	def animate(self, filename, resolution=None, speed=(1, 1), frame_rate=30, duration=10):
-		
+	def animate(self, filename, 
+		resolution=None, 
+		dpi=None, 
+		speed=1, 
+		frame_rate=30, 
+		duration=10
+	):
+
+		if(resolution != None):
+			if (dpi != None):
+				self.set_resolution(*resolution, dpi=dpi)
+			else:
+				self.set_resolution(*resolution)
+
 		def call(frames, total_frames):
 			print(f'frame = {1 + frames} / {total_frames}')
 
@@ -60,7 +71,7 @@ class BaseTransform:
 
 		self._samples = samples
 
-		self._data  = self.generate_data()
+		self._data  = self._generate_data()
 		self._path_slices = self._generate_polys_path()
 		self._polys = self._initialize_polys()
 
@@ -80,7 +91,14 @@ class BaseTransform:
 		self._path_slices = self._generate_polys_path()
 		self._polys = self._initialize_polys()
 
-	def set_resolution(self, width, height, dpi=72)
+	def set_colors(self, colors):
+		self._axis.clear()
+
+		self._colors = colors
+
+		self._polys = self._initialize_polys()
+
+	def set_resolution(self, width, height, dpi=72):
 		self._aspect_rate = width / height
 
 		self.figure.set_dpi(dpi)
@@ -122,7 +140,7 @@ class BaseTransform:
 		return polys
 
 	def _eval_polys_path(self, x, y):
-		
+
 		for poly, sl in zip(self._polys, self._path_slices):
 			poly.set_xy(np.column_stack([
 				np.concatenate([x[s] for s in sl]),
