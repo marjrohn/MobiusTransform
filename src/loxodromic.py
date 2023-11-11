@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from . import BaseTransform
+from .base_transform import BaseTransform
 
 class Loxodromic(BaseTransform):
 	
@@ -28,12 +28,8 @@ class Loxodromic(BaseTransform):
 		])
 
 	def _generate_data(self):
-		r = np.exp(np.linspace(-8, 8, self._samples, endpoint=True))
-		theta = np.linspace(-np.pi, np.pi, self._samples, endpoint=True)
-
-		#virtual points
-		r = np.concatenate([ r, [ r[-1] ] ])
-		theta = np.concatenate([ theta, [ theta[-1] ] ])
+		r = np.exp(np.linspace(-8, 8, 1 + self._samples, endpoint=True))
+		theta = np.linspace(0, 2*np.pi, 1 + self._samples, endpoint=True)
 
 		R, THETA = np.meshgrid(r, theta)
 		
@@ -47,10 +43,10 @@ class Loxodromic(BaseTransform):
 		x, y = np.real(w), np.imag(w)
 
 		a, b = self.get_axis_xlim()
-		x[np.abs(x - c) > (b - a)] = np.NaN
+		x[np.abs(x - c) > 2*(b - a)] = np.NaN
 
 		a, b = self.get_axis_ylim()
-		y[np.abs(y - c) > (b - a)] = np.NaN
+		y[np.abs(y - c) > 2*(b - a)] = np.NaN
 
 		return (x, y)
 

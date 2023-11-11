@@ -11,11 +11,11 @@ class BaseTransform:
 		xstride=16, 
 		ystride=8,
 		colors=[
-			'black', 'white'
+			'white', 'black'
 		]
 	):
 		self.figure, self.axis = plt.subplots(layout='constrained')
-		self.set_resolution(1280, 720)
+		self.set_resolution((1280, 720), dpi=72)
 		self.figure.get_layout_engine().set(
 			w_pad=0, h_pad=0, hspace=0, wspace=0
 		)
@@ -27,19 +27,27 @@ class BaseTransform:
 		self.set_samples(samples)
 
 
-	def animate(self, filename, 
+	def create_image(self, filename, resolution=None, dpi=None):
+		self.set_resolution(resolution, dpi=dpi)
+
+		self.axis.set_xlim(self.get_axis_xlim())
+		self.axis.set_ylim(self.get_axis_ylim())
+		self.axis.axis('off')
+
+		self._eval_polys_path(*self._apply(self._data))
+
+		self.figure.savefig(filename, pad_inches=0, dpi=self.figure.dpi)
+
+
+	def create_video(self, filename, 
 		resolution=None, 
 		dpi=None, 
 		speed=1, 
 		frame_rate=30, 
-		duration=10
+		duration=15
 	):
 
-		if(resolution != None):
-			if (dpi != None):
-				self.set_resolution(*resolution, dpi=dpi)
-			else:
-				self.set_resolution(*resolution)
+		self.set_resolution(resolution, dpi=dpi)
 
 		def call(frames, total_frames):
 			print(f'frame = {1 + frames} / {total_frames}')
@@ -98,7 +106,21 @@ class BaseTransform:
 
 		self._polys = self._initialize_polys()
 
-	def set_resolution(self, width, height, dpi=72):
+	def set_resolution(self, resolution, dpi=None):
+		
+		if(resolution == None and dpi == None):
+			pass
+
+		if (resolution == None):
+			width  = self.figure.get_figwidth()  * self.figure.dpi
+			height = self.figure.get_figheight() * self.figure.dpi
+		else:
+			width  = resolution[0]
+			height = resolution[1]
+
+		if(dpi == None):
+			dpi = self.figure.dpi
+
 		self._aspect_rate = width / height
 
 		self.figure.set_dpi(dpi)
@@ -106,6 +128,8 @@ class BaseTransform:
 		self.figure.set_figheight(height / dpi)
 	
 	def _generate_polys_path(self):
+		s = len(self._colors)
+
 		return [
 			[
 				np.s_[   i:i+self._xstride,      j+self._ystride],
@@ -116,6 +140,7 @@ class BaseTransform:
 
 			for i in range(0, self._samples, self._xstride)
 			for j in range(0, self._samples, self._ystride)
+			if( (i//self._xstride + j//self._ystride) % s < s - 1 )
 		]
 
 	def _initialize_polys(self):
@@ -127,15 +152,19 @@ class BaseTransform:
 			rasterized=True,
 		)
 
+		self.figure.set_facecolor(self._colors[0])
+		
+		s = len(self._colors)
 		color_index = [
-			(i//self._xstride + j//self._ystride) % len(self._colors)
+			(i//self._xstride + j//self._ystride) % s
 
 			for i in range(0, self._samples, self._xstride)
 			for j in range(0, self._samples, self._ystride)
+			if( (i//self._xstride + j//self._ystride) % s < s - 1)
 		]
 
 		for poly, idx in zip(polys, color_index):
-			poly.set_color(self._colors[idx])
+			poly.set_color(self._colors[1 + idx])
 
 		return polys
 
@@ -164,7 +193,7 @@ class BaseTransform:
 	def _get_shift(self, t):
 		raise NotImplementedError('This is a abstract method.')
 
-	def _apply(self, x, y):
+	def _apply(self, data):
 		raise NotImplementedError('This is a abstract method.')
 
 	def get_axis_xlim(self):

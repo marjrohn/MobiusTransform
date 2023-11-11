@@ -1,3 +1,5 @@
+import numpy as np
+
 from . import Loxodromic
 
 class Hyperbolic(Loxodromic):
