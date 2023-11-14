@@ -4,10 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+import progressbar
+
+
 class BaseTransform:
 
 	def __init__(self, 
-		samples=512, 
+		gridsize=512, 
 		xstride=16, 
 		ystride=8,
 		colors=[
@@ -24,11 +27,15 @@ class BaseTransform:
 		self._ystride = ystride
 		self._colors  = colors
 
-		self.set_samples(samples)
-
+		self.set_gridsize(gridsize)
 
 	def create_image(self, filename, resolution=None, dpi=None):
 		self.set_resolution(resolution, dpi=dpi)
+		dm = f"{self.figure.get_figwidth() * self.figure.dpi:.0f}" \
+			+ "x" + \
+			f"{self.figure.get_figheight() * self.figure.dpi:.0f}"
+
+		print(f'Creating Image \"{filename}\" ({dm}):...', end='')
 
 		self.axis.set_xlim(self.get_axis_xlim())
 		self.axis.set_ylim(self.get_axis_ylim())
@@ -37,7 +44,7 @@ class BaseTransform:
 		self._eval_polys_path(*self._apply(self._data))
 
 		self.figure.savefig(filename, pad_inches=0, dpi=self.figure.dpi)
-
+		print("done!\n")
 
 	def create_video(self, filename, 
 		resolution=None, 
@@ -46,11 +53,41 @@ class BaseTransform:
 		frame_rate=30, 
 		duration=15
 	):
-
 		self.set_resolution(resolution, dpi=dpi)
 
-		def call(frames, total_frames):
-			print(f'frame = {1 + frames} / {total_frames}')
+		total_frames = int(frame_rate * duration)
+		duration = total_frames // frame_rate
+		dm = f"{self.figure.get_figwidth() * self.figure.dpi:.0f}" \
+			+ "x" + \
+			f"{self.figure.get_figheight() * self.figure.dpi:.0f}"
+		tm = f"{duration // 60:02d}m{duration % 60:2.2f}s"
+
+		print(f"Creating \"{filename}\" ({dm}; {tm}; {frame_rate}fps):")
+		progress = progressbar.ProgressBar(widgets=[
+			'  ', progressbar.Percentage(),
+			' [frame ', progressbar.SimpleProgress(), '] ', 
+			progressbar.GranularBar(
+				markers=" ▁▂▃▄▅▆▇█", 
+				left='', 
+				right='|'
+			), ' ',  
+			progressbar.Timer(
+				format_not_started='00:00:00 Elapsed',
+        		format_finished='%(elapsed)8s Elapsed',
+        		format='%(elapsed)8s Elapsed',
+        		format_zero='00:00:00 Elapsed',
+        	), '  ',
+			progressbar.ETA(
+				format_not_started='--:--:-- ETA',
+        		format_finished=' ',
+        		format='%(eta)8s ETA',
+        		format_zero='00:00:00 ETA',
+        		format_NA=''
+        	)
+		], max_value=total_frames).start()
+
+		def call(frame, _):
+			progress.update(frame + 1)
 
 		def init():
 			self.axis.set_xlim(self.get_axis_xlim())
@@ -66,7 +103,7 @@ class BaseTransform:
 			
 		FuncAnimation(self.figure, update,
 			init_func=init,
-			frames=np.linspace(0, duration, frame_rate*duration, endpoint=True),
+			frames=np.linspace(0, duration, total_frames, endpoint=True),
 			blit=True
 		).save(filename,
 			writer='ffmpeg',
@@ -74,37 +111,37 @@ class BaseTransform:
 			progress_callback=call
 		)
 
-	def set_samples(self, samples):
+		progress.finish()
+		print('Done!\n')
+
+	def set_gridsize(self, gridsize):
 		self.axis.clear()
 
-		self._samples = samples
+		self._gridsize = gridsize
 
 		self._data  = self._generate_data()
-		self._path_slices = self._generate_polys_path()
-		self._polys = self._initialize_polys()
+		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_xstride(self, xstride):
 		self.axis.clear()
 
 		self._xstride = xstride
 
-		self._path_slices = self._generate_polys_path()
-		self._polys = self._initialize_polys()
+		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_ystride(self, ystride):
 		self.axis.clear()
 		
 		self._ystride = ystride
 
-		self._path_slices = self._generate_polys_path()
-		self._polys = self._initialize_polys()
+		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_colors(self, colors):
 		self._axis.clear()
 
 		self._colors = colors
 
-		self._polys = self._initialize_polys()
+		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_resolution(self, resolution, dpi=None):
 		
@@ -127,24 +164,25 @@ class BaseTransform:
 		self.figure.set_figwidth(width / dpi)
 		self.figure.set_figheight(height / dpi)
 	
-	def _generate_polys_path(self):
+	def _initialize_polys(self):
 		s = len(self._colors)
 
-		return [
-			[
-				np.s_[   i:i+self._xstride,      j+self._ystride],
-				np.s_[     i+self._xstride, j+self._ystride:j:-1],
-				np.s_[i+self._xstride:i:-1,                    j],
-				np.s_[                   i,  j:j+self._ystride+1]
-			]
+		path_slices = []
+		color_index = []
 
-			for i in range(0, self._samples, self._xstride)
-			for j in range(0, self._samples, self._ystride)
-			if( (i//self._xstride + j//self._ystride) % s < s - 1 )
-		]
+		for i in range(0, self._gridsize, self._xstride):
+			for j in range(0, self._gridsize, self._ystride):
+				idx = (i//self._xstride + j//self._ystride) % s
+				if( idx < s - 1 ):
+					color_index.append(idx)
+					path_slices.append([
+						np.s_[   i:i+self._xstride,      j+self._ystride],
+						np.s_[     i+self._xstride, j+self._ystride:j:-1],
+						np.s_[i+self._xstride:i:-1,                    j],
+						np.s_[                   i,  j:j+self._ystride+1]
+					])
 
-	def _initialize_polys(self):
-		polys = self.axis.fill(*[[], []]*len(self._path_slices),
+		polys = self.axis.fill(*[[], []]*len(path_slices),
 			closed=True,
 			linewidth=0,
 			animated=True, 
@@ -154,19 +192,10 @@ class BaseTransform:
 
 		self.figure.set_facecolor(self._colors[0])
 		
-		s = len(self._colors)
-		color_index = [
-			(i//self._xstride + j//self._ystride) % s
-
-			for i in range(0, self._samples, self._xstride)
-			for j in range(0, self._samples, self._ystride)
-			if( (i//self._xstride + j//self._ystride) % s < s - 1)
-		]
-
 		for poly, idx in zip(polys, color_index):
 			poly.set_color(self._colors[1 + idx])
 
-		return polys
+		return polys, path_slices
 
 	def _eval_polys_path(self, x, y):
 

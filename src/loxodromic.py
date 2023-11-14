@@ -22,14 +22,14 @@ class Loxodromic(BaseTransform):
 		self._ylim = None
 
 	def _get_shift(self, t):
-		return self._samples * np.array([
+		return self._gridsize * np.array([
 			np.pi * t,
 			        t
 		])
 
 	def _generate_data(self):
-		r = np.exp(np.linspace(-8, 8, 1 + self._samples, endpoint=True))
-		theta = np.linspace(0, 2*np.pi, 1 + self._samples, endpoint=True)
+		r = np.exp(np.linspace(-8, 8, 1 + self._gridsize, endpoint=True))
+		theta = np.linspace(0, 2*np.pi, 1 + self._gridsize, endpoint=True)
 
 		R, THETA = np.meshgrid(r, theta)
 		

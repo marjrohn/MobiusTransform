@@ -1,4 +1,6 @@
-from src import Loxodromic, Hyperbolic, Elliptic
+#!/usr/bin/env python3
+
+from src import *
 
 
 if __name__ == "__main__":
