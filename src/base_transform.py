@@ -62,8 +62,8 @@ class BaseTransform:
 			f"{self.figure.get_figheight() * self.figure.dpi:.0f}"
 		tm = f"{duration // 60:02d}m{duration % 60:2.2f}s"
 
-		print(f"Creating \"{filename}\" ({dm}; {tm}; {frame_rate}fps):")
-		progress = progressbar.ProgressBar(widgets=[
+		print(f"Creating Video \"{filename}\" ({dm}; {tm}; {frame_rate}fps):")
+		self._progress = progressbar.ProgressBar(widgets=[
 			'  ', progressbar.Percentage(),
 			' [frame ', progressbar.SimpleProgress(), '] ', 
 			progressbar.GranularBar(
@@ -85,35 +85,36 @@ class BaseTransform:
         		format_NA=''
         	)
 		], max_value=total_frames).start()
-
-		def call(frame, _):
-			progress.update(frame + 1)
-
-		def init():
-			self.axis.set_xlim(self.get_axis_xlim())
-			self.axis.set_ylim(self.get_axis_ylim())
-			self.axis.axis('off')
-
-			return self._polys
-
-		def update(time):
-			return self._eval_polys_path(*self._apply(
-				self._shift_data(speed * time / 90)
-			)) 
-			
-		FuncAnimation(self.figure, update,
-			init_func=init,
+	
+		FuncAnimation(self.figure, self._ani_update,
+			init_func=self._ani_start,
 			frames=np.linspace(0, duration, total_frames, endpoint=True),
+			fargs=(speed,),
 			blit=True
 		).save(filename,
 			writer='ffmpeg',
 			fps=frame_rate,
-			progress_callback=call
+			progress_callback=self._ani_call
 		)
 
-		progress.finish()
+		self._progress.finish()
 		print('Done!\n')
 
+	def _ani_call(self, frame, _):
+		self._progress.update(1 + frame)
+
+	def _ani_start(self):
+		self.axis.set_xlim(self.get_axis_xlim())
+		self.axis.set_ylim(self.get_axis_ylim())
+		self.axis.axis('off')
+
+		return []
+
+	def _ani_update(self, time, speed):
+		return self._eval_polys_path(*self._apply(
+			self._shift_data(speed * time / 90)
+		)) 
+		
 	def set_gridsize(self, gridsize):
 		self.axis.clear()
 

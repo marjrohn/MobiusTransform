@@ -11,8 +11,7 @@ class Loxodromic(BaseTransform):
 	def __init__(self, p, q, **kwargs):
 		self.set_fixed_points(p, q)
 		super().__init__(**kwargs)
-	
-	
+		
 	def set_fixed_points(self, p, q):
 		self._p = p
 		self._q = q

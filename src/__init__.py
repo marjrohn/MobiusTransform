@@ -1,4 +1,4 @@
-#from .parabolic import Parabolic
+from .parabolic import Parabolic
 from .loxodromic import Loxodromic
 from .elliptic import Elliptic
 from .hyperbolic import Hyperbolic
