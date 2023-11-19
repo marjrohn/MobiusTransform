@@ -8,7 +8,7 @@ from .base_transform import BaseTransform
 
 class Loxodromic(BaseTransform):
 	
-	def __init__(self, p, q, zoom=(1, -1), **kwargs):
+	def __init__(self, p, q, zoom=(0, -1), **kwargs):
 		self.set_fixed_points(p, q)
 		self.set_zoom(zoom)
 		
@@ -24,6 +24,9 @@ class Loxodromic(BaseTransform):
 		self._p = p if isinstance(p, (int, float, complex)) else p[0] + 1j * p[1]
 		self._q = q if isinstance(p, (int, float, complex)) else q[0] + 1j * q[1]
 
+		if(np.isclose(self._p, self._q)):
+			raise ValueError("The fixed points cannot be equal.")
+
 		self._center = .5 * (self._p + self._q)
 
 		self._xlim = None
@@ -38,19 +41,23 @@ class Loxodromic(BaseTransform):
 		elif(isinstance(zoom, (int, float))):
 			self.zoom = [zoom, -1]
 		else:
-			self.zoom = zoom.tolist() if isinstance(zoom, numpy.ndarray) else list(zoom)
+			self.zoom = zoom.tolist() if isinstance(zoom, np.ndarray) else list(zoom)
 
 		self.zoom[1] = int(self.zoom[1])
 		if(not self.zoom[1] in [-1, 0, 1]):
 			raise ValueError("second value of 'zoom' should be -1, 0 or 1")
 
-		dist = self._distance()
-		self.zoom[0] = min(dist, max(1, self.zoom[0])) 
+		dist = 2 * self._distance()
+		self.zoom[0] = min(1, max(0, self.zoom[0]))
+		self.zoom[0] = 1 + self.zoom[0] * (dist - 1)
 		
 		if(self.zoom[1] != -1):		
 			point = (self._p, self._q)[self.zoom[1]]	
-			alpha = (self.zoom[0] - 1) / dist	
+			alpha = (self.zoom[0] - 1) / (dist - 1)
 			self._center = self._center + alpha * (point - self._center)
+
+		self._xlim = None
+		self._ylim = None
 
 	def _get_shift(self, t):
 		return self.gridsize * np.array([
@@ -85,13 +92,12 @@ class Loxodromic(BaseTransform):
 		if (self._xlim != None):
 			return self._xlim
 
-
 		xcenter = np.real(self._center)
-		dist = self._distance()
+		dist = self._aspect_rate * self._distance()
 
 		self._xlim = (
-			self._aspect_rate * (xcenter - dist / self.zoom[0]),	
-			self._aspect_rate * (xcenter + dist / self.zoom[0])
+			xcenter - dist / self.zoom[0],
+			xcenter + dist / self.zoom[0]	
 		)
 
 		return self._xlim
@@ -104,8 +110,9 @@ class Loxodromic(BaseTransform):
 		dist = self._distance()
 
 		self._ylim = (
-			ycenter - (dist / self.zoom[0]),
-			ycenter + (dist / self.zoom[0])
+			ycenter - dist / self.zoom[0],
+			ycenter + dist / self.zoom[0]
 		)
 
+		print(self._ylim, self._center, dist, self.zoom[0])
 		return self._ylim

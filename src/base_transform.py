@@ -139,9 +139,9 @@ class BaseTransform:
 		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_colors(self, colors):
-		self._axis.clear()
+		self.axis.clear()
 
-		if (isinstance(colors, np.ndarray))
+		if (isinstance(colors, np.ndarray)):
 			self.colors = colors.tolist()
 		else:
 			self.colors = colors
@@ -236,7 +236,7 @@ class BaseTransform:
 		if(isinstance(p, np.ndarray)):
 			p = p.tolist()
 
-		if(not isinstnace(p, (tuple, list))):
+		if(not isinstance(p, (tuple, list))):
 			return False
 
 		if(len(p) == 2 and all(x in [int, float] for x in map(type, p))):

@@ -5,7 +5,7 @@ from .base_transform import BaseTransform
 
 class Parabolic(BaseTransform):
 
-	def __init__(self, p, zoom=1,, xstride=8, ystride=8, **kwargs):
+	def __init__(self, p, zoom=0, xstride=8, ystride=8, **kwargs):
 		self.set_fixed_point(p)
 		self.set_zoom(zoom)
 		
@@ -21,7 +21,8 @@ class Parabolic(BaseTransform):
 			raise ValueError(f"cannot interpret '{p}' as a 2d point.")
 
 		self._p = p if isinstance(p, (int, float, complex)) else p[0] + 1j * p[1]
-
+		self._center = p
+		
 		self._xlim = None
 		self._ylim = None
 
@@ -29,7 +30,11 @@ class Parabolic(BaseTransform):
 		if(not isinstance(zoom, (int, float))):
 			raise TypeError(f"'zoom' is expected to be a int or float, but received: f'{type(zoom)}'")
 
-		self.zoom = min(10, max(1, zoom))
+		self.zoom = min(1, max(0, zoom))
+		self.zoom = 1 + 9 * self.zoom
+
+		self._xlim = None
+		self._ylim = None
 
 	def _ani_start(self):
 		self.axis.set_xlim(self.get_axis_xlim())
