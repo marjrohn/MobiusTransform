@@ -47,7 +47,7 @@ class Loxodromic(BaseTransform):
 		if(not self.zoom[1] in [-1, 0, 1]):
 			raise ValueError("second value of 'zoom' should be -1, 0 or 1")
 
-		dist = 2 * self._distance()
+		dist = self._distance()
 		self.zoom[0] = min(1, max(0, self.zoom[0]))
 		self.zoom[0] = 1 + self.zoom[0] * (dist - 1)
 		
@@ -107,11 +107,11 @@ class Loxodromic(BaseTransform):
 			return self._ylim
 
 		ycenter = np.imag(self._center)
-		dist = self._distance()
+		dist = self._distance() / self.zoom[0]
 
 		self._ylim = (
-			ycenter - dist / self.zoom[0],
-			ycenter + dist / self.zoom[0]
+			ycenter - dist,
+			ycenter + dist
 		)
 
 		return self._ylim
