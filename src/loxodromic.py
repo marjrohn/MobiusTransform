@@ -114,5 +114,4 @@ class Loxodromic(BaseTransform):
 			ycenter + dist / self.zoom[0]
 		)
 
-		print(self._ylim, self._center, dist, self.zoom[0])
 		return self._ylim

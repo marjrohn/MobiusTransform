@@ -62,7 +62,7 @@ Clone este repositorio e instale os requerimentos em um ambiente virtual.
 git clone https://github.com/marjrohn/MobiusTransform.git && \
 python3 -m venv .venv/ && \
 source .venv/bin/activate && \
-pip install --requeriments MobiusTransform/requeriments.txt
+python3 -m pip install --requirement MobiusTransform/requirements.txt
 ```
 
 Além disso é necessario ter [FFmpeg](https://www.ffmpeg.org/download.html) instalado para criação de videos.
