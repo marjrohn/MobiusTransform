@@ -23,11 +23,12 @@ class BaseTransform:
 			w_pad=0, h_pad=0, hspace=0, wspace=0
 		)
 
-		self._xstride = xstride
-		self._ystride = ystride
-		self._colors  = colors
+		self.xstride = xstride
+		self.ystride = ystride
+		self.colors  = colors
 
 		self.set_gridsize(gridsize)
+
 
 	def create_image(self, filename, resolution=None, dpi=None):
 		self.set_resolution(resolution, dpi=dpi)
@@ -73,17 +74,17 @@ class BaseTransform:
 			), ' ',  
 			progressbar.Timer(
 				format_not_started='00:00:00 Elapsed',
-        		format_finished='%(elapsed)8s Elapsed',
-        		format='%(elapsed)8s Elapsed',
-        		format_zero='00:00:00 Elapsed',
-        	), '  ',
+						format_finished='%(elapsed)8s Elapsed',
+						format='%(elapsed)8s Elapsed',
+						format_zero='00:00:00 Elapsed',
+					), '  ',
 			progressbar.ETA(
 				format_not_started='--:--:-- ETA',
-        		format_finished=' ',
-        		format='%(eta)8s ETA',
-        		format_zero='00:00:00 ETA',
-        		format_NA=''
-        	)
+						format_finished=' ',
+						format='%(eta)8s ETA',
+						format_zero='00:00:00 ETA',
+						format_NA=''
+					)
 		], max_value=total_frames).start()
 	
 		FuncAnimation(self.figure, self._ani_update,
@@ -118,7 +119,7 @@ class BaseTransform:
 	def set_gridsize(self, gridsize):
 		self.axis.clear()
 
-		self._gridsize = gridsize
+		self.gridsize = max(256, 2**(np.round(np.log2(gridsize))).astype(int))
 
 		self._data  = self._generate_data()
 		self._polys, self._path_slices = self._initialize_polys()
@@ -126,21 +127,33 @@ class BaseTransform:
 	def set_xstride(self, xstride):
 		self.axis.clear()
 
-		self._xstride = xstride
+		self.xstride = max(4, 2**np.round(np.log2(xstride)).astype(int))
 
 		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_ystride(self, ystride):
 		self.axis.clear()
-		
-		self._ystride = ystride
+
+		self.ystride = max(4, 2**np.round(np.log2(ystride)).astype(int))
 
 		self._polys, self._path_slices = self._initialize_polys()
 
 	def set_colors(self, colors):
 		self._axis.clear()
 
-		self._colors = colors
+		if (isinstance(colors, np.ndarray))
+			self.colors = colors.tolist()
+		else:
+			self.colors = colors
+		
+		if(not isinstance(self.colors, (list, tuple))):	
+			raise TypeError(
+				 "'colors' should be a sequence (list, tuple, " +
+				f"numpy.ndarray), but received: {type(colors)}"
+			)
+		
+		if(len(self.colors) < 2):
+			raise ValueError("expected at least 2 values for 'colors'.")
 
 		self._polys, self._path_slices = self._initialize_polys()
 
@@ -153,8 +166,7 @@ class BaseTransform:
 			width  = self.figure.get_figwidth()  * self.figure.dpi
 			height = self.figure.get_figheight() * self.figure.dpi
 		else:
-			width  = resolution[0]
-			height = resolution[1]
+			width, height = resolution
 
 		if(dpi == None):
 			dpi = self.figure.dpi
@@ -166,21 +178,21 @@ class BaseTransform:
 		self.figure.set_figheight(height / dpi)
 	
 	def _initialize_polys(self):
-		s = len(self._colors)
+		s = len(self.colors)
 
 		path_slices = []
 		color_index = []
 
-		for i in range(0, self._gridsize, self._xstride):
-			for j in range(0, self._gridsize, self._ystride):
-				idx = (i//self._xstride + j//self._ystride) % s
+		for i in range(0, self.gridsize, self.xstride):
+			for j in range(0, self.gridsize, self.ystride):
+				idx = (i//self.xstride + j//self.ystride) % s
 				if( idx < s - 1 ):
 					color_index.append(idx)
 					path_slices.append([
-						np.s_[   i:i+self._xstride,      j+self._ystride],
-						np.s_[     i+self._xstride, j+self._ystride:j:-1],
-						np.s_[i+self._xstride:i:-1,                    j],
-						np.s_[                   i,  j:j+self._ystride+1]
+						np.s_[   i:i+self.xstride,      j+self.ystride],
+						np.s_[     i+self.xstride, j+self.ystride:j:-1],
+						np.s_[i+self.xstride:i:-1,                    j],
+						np.s_[                   i,  j:j+self.ystride+1]
 					])
 
 		polys = self.axis.fill(*[[], []]*len(path_slices),
@@ -191,10 +203,10 @@ class BaseTransform:
 			rasterized=True,
 		)
 
-		self.figure.set_facecolor(self._colors[0])
+		self.figure.set_facecolor(self.colors[0])
 		
 		for poly, idx in zip(polys, color_index):
-			poly.set_color(self._colors[1 + idx])
+			poly.set_color(self.colors[1 + idx])
 
 		return polys, path_slices
 
@@ -216,6 +228,31 @@ class BaseTransform:
 			order=3, 
 			mode='wrap'
 		)
+
+	def _ispoint2d(self, p):
+		if(isinstance(p, (int, float, complex))):
+			return True
+
+		if(isinstance(p, np.ndarray)):
+			p = p.tolist()
+
+		if(not isinstnace(p, (tuple, list))):
+			return False
+
+		if(len(p) == 2 and all(x in [int, float] for x in map(type, p))):
+			return True
+
+		return False
+
+	def _threshold(self, x, y):
+
+		a, b = self.get_axis_xlim()
+		x[np.abs(x - np.real(self._center)) > 2*(b - a)] = np.NaN
+
+		a, b = self.get_axis_ylim()
+		y[np.abs(y - np.imag(self._center)) > 2*(b - a)] = np.NaN
+
+		return (x, y)
 
 	def _generate_data(self):
 		raise NotImplementedError('This is a abstract method.')

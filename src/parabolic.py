@@ -5,17 +5,31 @@ from .base_transform import BaseTransform
 
 class Parabolic(BaseTransform):
 
-	def __init__(self, p, zoom=1, xstride=8, ystride=8, **kwargs):
-		self._zoom = zoom
+	def __init__(self, p, zoom=1,, xstride=8, ystride=8, **kwargs):
 		self.set_fixed_point(p)
-
+		self.set_zoom(zoom)
+		
 		super().__init__(xstride=xstride, ystride=ystride, **kwargs)
 
+		
+	def get_fixed_point(self):
+		return self._p
+
 	def set_fixed_point(self, p):
-		self._p = p
+		
+		if(not self._ispoint2d(p)):
+			raise ValueError(f"cannot interpret '{p}' as a 2d point.")
+
+		self._p = p if isinstance(p, (int, float, complex)) else p[0] + 1j * p[1]
 
 		self._xlim = None
 		self._ylim = None
+
+	def set_zoom(self, zoom):
+		if(not isinstance(zoom, (int, float))):
+			raise TypeError(f"'zoom' is expected to be a int or float, but received: f'{type(zoom)}'")
+
+		self.zoom = min(10, max(1, zoom))
 
 	def _ani_start(self):
 		self.axis.set_xlim(self.get_axis_xlim())
@@ -41,14 +55,14 @@ class Parabolic(BaseTransform):
 		return circles
 
 	def _generate_data(self):
-		t = np.linspace(-1, 1, 1 + self._gridsize, endpoint=True)
+		t = np.linspace(-1, 1, 1 + self.gridsize, endpoint=True)
 		
 		x, y = np.meshgrid(t, t)
 		
 		return x + 1j*y
 
 	def _get_shift(self, t):
-		return self._gridsize * np.array([t, 0])
+		return self.gridsize * np.array([t, 0])
 
 	def _apply(self, data):
 		z = data
@@ -58,13 +72,7 @@ class Parabolic(BaseTransform):
 
 		x, y = np.real(w), np.imag(w)
 		
-		a, b = self.get_axis_xlim()
-		x[np.abs(x - p) > 2*(b - a)] = np.NaN
-
-		a, b = self.get_axis_ylim()
-		y[np.abs(y - p) > 2*(b - a)] = np.NaN
-
-		return (x, y)
+		return self._threshold(x, y)
 
 	def get_axis_xlim(self):
 		if(self._xlim != None):
@@ -72,8 +80,8 @@ class Parabolic(BaseTransform):
 
 		x0 = np.real(self._p)
 		self._xlim = (
-			self._aspect_rate * (x0 - 10) / self._zoom,
-			self._aspect_rate * (x0 + 10) / self._zoom
+			self._aspect_rate * (x0 - (10 / self.zoom)),
+			self._aspect_rate * (x0 + (10 / self.zoom))
 		)
 
 		return self._xlim
@@ -84,8 +92,8 @@ class Parabolic(BaseTransform):
 
 		y0 = np.imag(self._p)
 		self._ylim = (
-			(y0 - 10) / self._zoom,
-			(y0 + 10) / self._zoom
+			y0 - (10 / self.zoom),
+			y0 + (10 / self.zoom)
 		)
 
 		return self._ylim
