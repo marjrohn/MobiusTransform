@@ -151,10 +151,10 @@ elliptic.create_image('elliptic_zoom_1.png')
 
 
 #### Propriedades de Video
-É possivel mudar a velocidade do video, resolução, FPS e mudar as cores dos polignos
+É possivel mudar a velocidade do video, resolução, FPS e duração. Também é possível escolher múltiplas cores para os poligonos.
 
 ```py
-loxodromic.set_gridsize(1024) # dobra tamanho da malha para criação dos polignos, padrão é 512
+loxodromic.set_gridsize(1024) # dobra tamanho da malha para criação dos poligonos, padrão é 512
 loxodromic.set_colors(['cyan', 'magenta', 'yellow', 'black'])
 #RGB normalizado também funciona
 #loxodromic.set_colors([(0, 1, 1), (1, 0, 1), (1, 1, 0), (0, 0, 0)])
