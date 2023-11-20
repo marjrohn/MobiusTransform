@@ -32,12 +32,12 @@ $$cz^2 + (d - a) z - b = 0.$$
 Que dá os seguintes pontos quando $M(z)$ está _normalizada_, isto é, quando $ad - bc = 1$,
 ```math
   \begin{matrix}
-  \displaystyle p = \dfrac{(a - d) + \sqrt{(a + d)^2 + 4}}{2c}, \\ \ \\
-  \displaystyle q = \dfrac{(a - d) - \sqrt{(a + d)^2 + 4}}{2c}.
+  \displaystyle p = \dfrac{(a - d) + \sqrt{(a + d)^2 - 4}}{2c}, \\ \ \\
+  \displaystyle q = \dfrac{(a - d) - \sqrt{(a + d)^2 - 4}}{2c}.
   \end{matrix}
 ```
 
-Portanto uma transformação de Möbius tem no máximo dois pontos fixos. E possui um único ponto fixo quando $a - d = \pm 2$. 
+Portanto uma transformação de Möbius tem no máximo dois pontos fixos. E possui um único ponto fixo quando $a + d = \pm 2$. 
 Uma transformação que tem um único ponto fixo é classificada como **parabólica**.
 
 ### Classificação de $M(z)$ para dois pontos fixos.
