@@ -88,7 +88,7 @@ elliptic.create_video('elliptic.mov')
 <video src="https://github.com/marjrohn/MobiusTransform/assets/61857287/8a083512-7fed-4903-8e50-d66db62c7c3e" width=600px /><video />
 
 
-#### Transformação Hiperbolica
+#### Transformação Hiperbólica
 ```py
 from MobiusTransform import Hyperbolic
 
@@ -109,19 +109,19 @@ loxodromic.create_video('loxodromic.mov')
 
 <video src="https://github.com/marjrohn/MobiusTransform/assets/61857287/9e9d4e48-8547-4882-b20d-5dcb31b429e3" width=600px /><video />
 
-#### Transformação Parabolica
+#### Transformação Parabólica
 ```py
 from MobiusTransform import Elliptic
 
 parabolic = Parabolic(0)
-parabolic..create_video('parabolic.mov')
+parabolic.create_video('parabolic.mov')
 ```
 <video src="https://github.com/marjrohn/MobiusTransform/assets/61857287/ef050eb2-eabe-43b6-b4eb-ac8f177f2ec1" width=600px /><video/ >
 
 
 ### Alguns detalhes
 
-### Zoom 
+#### Zoom 
 Aplicando zoom de 75% no centro da imagem (ponto médio entre $p$ e $q$)
 
 ```py
@@ -143,14 +143,16 @@ elliptic.create_image('elliptic_zoom_0.png')
 
 Aplicando zoom de 100% em torno do segundo ponto fixo
 ```py
-elliptic.set_zoom((1, 0))
+elliptic.set_zoom((1, 1))
 elliptic.create_image('elliptic_zoom_1.png')
 ```
 
 <img src="https://github.com/marjrohn/MobiusTransform/assets/61857287/07acf537-a083-4f20-8473-2d35dccb4fc9" width=800px><img />
 
+
 #### Propriedades de Video
 É possivel mudar a velocidade do video, resolução, FPS e mudar as cores dos polignos
+
 ```py
 loxodromic.set_gridsize(1024) # dobra tamanho da malha para criação dos polignos, padrão é 512
 loxodromic.set_colors(['cyan', 'magenta', 'yellow', 'black'])
