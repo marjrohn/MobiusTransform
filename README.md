@@ -150,6 +150,15 @@ elliptic.create_image('elliptic_zoom_1.png')
 <img src="https://github.com/marjrohn/MobiusTransform/assets/61857287/07acf537-a083-4f20-8473-2d35dccb4fc9" width=800px><img />
 
 
+Se for parabólica só é possível dá zoom em torno do ponto fixo.
+```py
+parabolic.set_zoom(.75)
+parabolic.create_image('parabolic_zoom.png')
+```
+
+<img src="https://github.com/marjrohn/MobiusTransform/assets/61857287/446796d3-62c5-4934-90b7-fd3c3a2731a4" width=600px><img />
+
+
 #### Propriedades de Video
 É possivel mudar a velocidade do video, resolução, FPS e duração. Também é possível escolher múltiplas cores para os poligonos.
 
